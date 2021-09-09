@@ -1,0 +1,7 @@
+1.SUBSTITUTE(text，old_text，new_text，[instance_num])
+Text是需要替换其中字符的文本，或是含有文本的单元格引用；
+Old_text是需要替换的旧文本；
+New_text用于替换old_text 的文本；
+Instance_num 为一数值，用来指定以new_text 替换第几次出现的old_text；如果指定了instance_num，则只有满足要求的old_text 被替换；如果缺省则将用 new_text 替换 TEXT 中出现的所有 old_text。
+2.MID(A1,1,2)  abcde - ab 截取指定索引区间的字符    left() right()只能截取从第几个索引后面的内容
+3.=VLOOKUP(A1,Sheet2!A:B,2,FALSE)   匹配另一张表，例如id号匹配，填入第二列值，false精确匹配   true模糊匹配

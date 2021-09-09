@@ -1,0 +1,143 @@
+牛客SQL18
+1.请你查找薪水排名第二多的员工编号emp_no、薪水salary、last_name以及first_name，不能使用order by完成
+
+解法1 max 任意相同工资人数（比最大的数小的数内再求最大值，即为第二）
+select e.emp_no,s.salary,e.last_name,e.first_name
+from
+employees e
+join 
+salaries s on e.emp_no=s.emp_no 
+and  s.to_date='9999-01-01'
+and s.salary = (select max(salary)
+                from salaries
+                where salary<(select max(salary) 
+                              from salaries 
+                              where to_date='9999-01-01'
+                             )
+                        and to_date='9999-01-01'
+                )
+
+
+第二种 通用型可以求任意第几高，并且可以求多个形同工资（自连接  <= 后，s2.salary 出现的个数即为第几）
+select e.emp_no,s.salary,e.last_name,e.first_name
+from
+employees e
+join 
+salaries s on e.emp_no=s.emp_no 
+and  s.to_date='9999-01-01'
+and s.salary = 
+(
+     select s1.salary
+     from 
+     salaries s1
+     join
+     salaries s2 on s1.salary<=s2.salary 
+     and s1.to_date='9999-01-01' and s2.to_date='9999-01-01'
+     group by s1.salary
+     having count(distinct s2.salary)=2
+ )
+ 
+2.查询7天连续登陆用户
+
+SET NAMES utf8mb4;
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- ----------------------------
+-- Table structure for login_log
+-- ----------------------------
+DROP TABLE IF EXISTS `login_log`;
+CREATE TABLE `login_log`  (
+  `id` int(0) NOT NULL AUTO_INCREMENT,
+  `stu_name` varchar(50) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL,
+  `createtime` datetime(6) NULL DEFAULT CURRENT_TIMESTAMP(6),
+  PRIMARY KEY (`id`) USING BTREE
+) ENGINE = InnoDB AUTO_INCREMENT = 20 CHARACTER SET = utf8 COLLATE = utf8_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of login_log
+-- ----------------------------
+INSERT INTO `login_log` VALUES (1, 'zhangsan', '2021-03-07 09:58:29.438123');
+INSERT INTO `login_log` VALUES (2, 'zhangsan', '2021-03-03 09:58:29.438123');
+INSERT INTO `login_log` VALUES (3, 'zhangsan', '2021-03-05 09:58:29.438123');
+INSERT INTO `login_log` VALUES (4, 'zhangsan', '2021-03-01 09:58:29.438123');
+INSERT INTO `login_log` VALUES (5, 'lisi', '2021-02-04 09:58:29.438123');
+INSERT INTO `login_log` VALUES (6, 'lisi', '2021-02-03 09:58:29.438123');
+INSERT INTO `login_log` VALUES (7, 'lisi', '2021-02-02 09:58:29.438123');
+INSERT INTO `login_log` VALUES (8, 'lisi', '2021-02-01 09:58:29.438123');
+INSERT INTO `login_log` VALUES (9, 'lisi', '2021-02-05 09:58:29.438123');
+INSERT INTO `login_log` VALUES (10, 'lisi', '2021-02-06 09:58:29.438123');
+INSERT INTO `login_log` VALUES (11, 'lisi', '2021-02-07 09:58:29.438123');
+INSERT INTO `login_log` VALUES (12, 'lisi', '2021-02-08 09:58:29.438123');
+INSERT INTO `login_log` VALUES (13, 'xiaowang', '2021-02-05 09:58:29.438123');
+INSERT INTO `login_log` VALUES (14, 'xiaoli', '2021-02-06 09:58:29.438123');
+INSERT INTO `login_log` VALUES (15, 'xiaoli', '2021-02-07 09:58:29.438123');
+INSERT INTO `login_log` VALUES (16, 'xiaozhao', '2021-02-08 09:58:29.438123');
+INSERT INTO `login_log` VALUES (17, 'lisi', '2021-02-05 09:58:29.438123');
+INSERT INTO `login_log` VALUES (18, 'xiaozhao', '2021-02-06 09:58:29.438123');
+INSERT INTO `login_log` VALUES (19, 'lisi', '2021-02-07 09:58:29.438123');
+
+SET FOREIGN_KEY_CHECKS = 1;
+
+select  stu_name,count(num) num from 
+(
+    -- 2 计算登录日期,登录时间-用row_number() over(partition by _ order by _)函数将用户id分组的结果值
+    select stu_name,date(createtime)-row_number() over(partition by stu_name ORDER BY createtime) num from 
+    (
+    -- 1、去重，每天多次登录，只保留一条
+    select distinct stu_name,DATE_FORMAT(createtime,'%Y-%m-%d')createtime  from login_log
+    ) t1
+)t2 GROUP BY stu_name,num HAVING(count(1))>7;
+
+3.-- 求众数
+select * from Graduates GROUP BY income having count(1) >= all(select count(1) from Graduates GROUP BY income);
+
+select * from Graduates GROUP BY income having count(*) = (select max(a) from (select count(*) a from graduates group by income) m);
+-- 求中位数
+SET @rowindex :=-1;
+select AVG(g.income) from (select @rowindex:=@rowindex+1 as rowindex,name,income from Graduates ORDER BY income) g where g.rowindex in (FLOOR(@rowindex/2),CEIL(@rowindex/2));
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+牛客SQL23
+2.请你统计各个部门的工资记录数，给出部门编码dept_no、部门名称dept_name以及部门在salaries表里面有多少条记录sum
+
+下面介绍三种用于进行排序的专用窗口函数：
+
+1、RANK()
+    在计算排序时，若存在相同位次，会跳过之后的位次。
+    例如，有3条排在第1位时，排序为：1，1，1，4······
+
+2、DENSE_RANK()
+    这就是题目中所用到的函数，在计算排序时，若存在相同位次，不会跳过之后的位次。
+    例如，有3条排在第1位时，排序为：1，1，1，2······
+
+3、ROW_NUMBER()
+    这个函数赋予唯一的连续位次。
+    例如，有3条排在第1位时，排序为：1，2，3，4······
+
+窗口函数用法：
+<窗口函数> OVER ( [PARTITION BY <列清单> ]
+                                ORDER BY <排序用列清单> ）
+*其中[ ]中的内容可以忽略
+
+
+不使用窗口函数
+-- rank排名：查询表中大于自己薪水的员工的数量（考虑并列：去重）
+SELECT
+  s1.emp_no,
+  s1.salary,
+  (SELECT
+    COUNT(DISTINCT s2.salary)
+  FROM
+    salaries s2
+  WHERE s2.to_date = '9999-01-01'
+    AND s2.salary >= s1.salary) AS `rank`  -- 去重：计算并列排名
+FROM
+  salaries s1
+WHERE s1.to_date = '9999-01-01'
+ORDER BY s1.salary DESC,
+  s1.emp_no ;
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
