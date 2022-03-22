@@ -122,6 +122,15 @@ select AVG(g.income) from (select @rowindex:=@rowindex+1 as rowindex,name,income
                                 ORDER BY <排序用列清单> ）
 *其中[ ]中的内容可以忽略
 
+前后窗口函数：
+③前后函数：LAG(expr,n)、LEAD(expr,n)
+用途：返回位于当前行的前n行（LAG(expr,n)）或后n行（LEAD(expr,n)）的expr的值
+应用场景：查询前1名同学的成绩和当前同学成绩的差值
+
+头尾窗口函数：
+④头尾函数：FIRST_VALUE(expr)、LAST_VALUE(expr)
+用途：返回第一个（FIRST_VALUE(expr)）或最后一个（LAST_VALUE(expr)）expr的值
+应用场景：截止到当前成绩，按照日期排序查询第1个和最后1个同学的分数
 
 不使用窗口函数
 -- rank排名：查询表中大于自己薪水的员工的数量（考虑并列：去重）
